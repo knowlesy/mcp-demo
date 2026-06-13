@@ -1,0 +1,31 @@
+# Ignore Git internals
+.git
+.gitignore
+
+# Ignore sensitive secrets and keys (Crucial for container security!)
+*.pem
+*.key
+*.crt
+*.cert
+*.pfx
+.env*
+secrets/
+certs/
+
+# Ignore Python local environments and caches
+__pycache__/
+*.py[cod]
+*$py.class
+env/
+venv/
+.venv/
+.pytest_cache/
+
+# Ignore PowerShell logs and local testing data
+*.log
+*.clixml
+
+# Ignore local Helm/Argo build artifacts or pulled dependencies
+charts/
+*.tgz
+manifests/

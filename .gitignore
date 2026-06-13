@@ -1,0 +1,109 @@
+# ==============================================================================
+# 1. CORE SECURITY, KEYS, & CERTS (Must align across .gitignore, .dockerignore, etc.)
+# ==============================================================================
+*.pem
+*.key
+*.crt
+*.cert
+*.pfx
+*.csr
+.env*
+secrets/
+certs/
+
+# ==============================================================================
+# 2. PYTHON 
+# ==============================================================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing / Type checking caches
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.cache
+htmlcov/
+.mypy_cache/
+.pyre/
+.ruff_cache/
+
+# ==============================================================================
+# 3. POWERSHELL
+# ==============================================================================
+# PowerShell XML serialization files and execution logs
+.ps1[^1]
+*.log
+*.clixml
+modules/
+
+# ==============================================================================
+# 4. HELM & ARGOCD
+# ==============================================================================
+# Ignore fetched dependencies (always let `helm dependency update` fetch them fresh)
+charts/
+*.tgz
+
+# Ignore locally rendered manifests or tool-specific output data
+my-values.yaml
+.argocd-source-*.yaml
+manifests/
+extracted-charts/
+
+# ==============================================================================
+# 5. DOCKER & CONTAINER LOCAL ARTIFACTS
+# ==============================================================================
+# Prevent tracking local container state or build dumps
+.dockerignore
+docker-compose.override.yml
+
+# ==============================================================================
+# 6. SYSTEM & IDE CLUTTER
+# ==============================================================================
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE - VS Code / Cursor
+.vscode/
+!.vscode/extensions.json
+.history/
+*.code-workspace
+
+# IDE - EditorConfig local overrides (if any)
+.editorconfig.local

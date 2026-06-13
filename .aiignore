@@ -1,0 +1,33 @@
+# === SECRETS & CERTS (Keep out of source control) ===
+*.pem
+*.key
+*.crt
+*.cert
+*.pfx
+.env*
+secrets/
+certs/
+
+# === PYTHON ===
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# === POWERSHELL ===
+.ps1[^1]
+*.log
+*.clixml
+
+# === HELM & ARGO ===
+# Ignore fetched dependencies (let helm dependency update fetch them)
+charts/
+*.tgz
+# Local user values files you don't want in git
+my-values.yaml
+.argocd-source-*.yaml

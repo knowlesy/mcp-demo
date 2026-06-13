@@ -1,0 +1,54 @@
+# EditorConfig helps developers define and maintain consistent
+# coding styles between different editors and IDEs.
+# https://editorconfig.org
+
+root = true
+
+# ==========================================
+# Global Defaults
+# ==========================================
+[*]
+# Use spaces instead of physical tabs
+indent_style = space
+# Default to standard 4-space indentation
+indent_size = 4
+# Enforce UTF-8 character encoding
+charset = utf-8
+# Enforce Unix-style line endings (\n) as the default global standard
+end_of_line = lf
+# Automatically insert a blank line at the end of every file upon saving
+insert_final_newline = true
+# Strip any accidental trailing whitespace on save
+trim_trailing_whitespace = true
+
+# ==========================================
+# Python Overrides
+# ==========================================
+[*.py]
+# Enforce strict PEP 8 line spacing rules
+indent_size = 4
+end_of_line = lf
+
+# ==========================================
+# YAML, Helm, and ArgoCD Overrides
+# ==========================================
+[*.{yaml,yml}]
+# Kubernetes and Helm will crash if you use 4 spaces; must be strictly 2 spaces
+indent_size = 2
+
+# ==========================================
+# PowerShell Overrides
+# ==========================================
+[*.{ps1,psm1,psd1}]
+# PowerShell scripts run natively on Windows expect CRLF (\r\n) line endings
+end_of_line = crlf
+indent_size = 4
+
+# ==========================================
+# Documentation Overrides
+# ==========================================
+[*.md]
+# Markdown files use two trailing spaces to explicitly indicate a line break,
+# so we disable the automatic whitespace trimming feature here.
+trim_trailing_whitespace = false
+indent_size = 4
