@@ -1,0 +1,50 @@
+---
+# Fix Scenario 2: Rundeck deleted the dummy-webapp Deployment.
+# Re-applies the k8s manifests directly and then lets ArgoCD take over.
+- name: Fix Rundeck Chaos — restore deleted deployment
+  hosts: local
+  gather_facts: false
+  vars:
+    k8s_manifest_dir: "{{ playbook_dir }}/../../apps/dummy-webapp/k8s"
+    argocd_app: "dummy-webapp"
+
+  tasks:
+    - name: Check if deployment exists
+      command: kubectl get deployment dummy-webapp -n {{ app_namespace }}
+      register: dep_check
+      failed_when: false
+      changed_when: false
+
+    - name: Show deployment status
+      debug:
+        msg: "{{ dep_check.stderr if dep_check.rc != 0 else 'Deployment exists (may have been restored by ArgoCD already)' }}"
+
+    - name: Re-apply all k8s manifests if deployment is missing
+      command: kubectl apply -f {{ k8s_manifest_dir }}/
+      when: dep_check.rc != 0
+
+    - name: Wait for pod to be Ready
+      command: >
+        kubectl wait --for=condition=Ready pod
+        -l app=dummy-webapp
+        -n {{ app_namespace }}
+        --timeout=120s
+      when: dep_check.rc != 0
+
+    - name: Force ArgoCD hard refresh and sync
+      shell: |
+        argocd app get {{ argocd_app }} --hard-refresh --grpc-web --insecure 2>/dev/null || true
+        argocd app sync {{ argocd_app }} --grpc-web --insecure 2>/dev/null || true
+      ignore_errors: true
+
+    - name: Verify health
+      uri:
+        url: "{{ app_url }}/health"
+        method: GET
+        status_code: 200
+      retries: 12
+      delay: 10
+
+    - name: Report
+      debug:
+        msg: "dummy-webapp restored successfully after Rundeck chaos."

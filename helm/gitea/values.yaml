@@ -1,0 +1,61 @@
+# Gitea — lightweight local git server
+# Helm chart: gitea-charts/gitea
+
+replicaCount: 1
+
+image:
+  tag: ""  # chart default
+
+gitea:
+  admin:
+    username: gitadmin
+    password: password
+    email: gitadmin@local.dev
+
+  config:
+    server:
+      DOMAIN: gitea.local
+      ROOT_URL: http://gitea.local
+      HTTP_PORT: 3000
+    database:
+      DB_TYPE: sqlite3
+    session:
+      PROVIDER: memory
+    cache:
+      ADAPTER: memory
+    queue:
+      TYPE: level
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+persistence:
+  enabled: true
+  size: 2Gi
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: gitea.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+# Disable all HA/companion services
+redis-cluster:
+  enabled: false
+redis:
+  enabled: false
+postgresql:
+  enabled: false
+postgresql-ha:
+  enabled: false
+
+signing:
+  enabled: false

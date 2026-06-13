@@ -1,0 +1,65 @@
+---
+# Fix Scenario 1: OOM Kill
+# Raises the memory limit on dummy-webapp from 256Mi to 512Mi,
+# commits the change to Gitea, and triggers an ArgoCD sync.
+- name: Fix OOM Kill — raise memory limits
+  hosts: local
+  gather_facts: false
+  vars:
+    manifest_path: "{{ playbook_dir }}/../../apps/dummy-webapp/k8s/deployment.yaml"
+    new_limit: "512Mi"
+    argocd_app: "dummy-webapp"
+
+  tasks:
+    - name: Confirm OOMKilled status
+      command: >
+        kubectl get pod -n {{ app_namespace }} -l app=dummy-webapp
+        -o jsonpath='{.items[0].status.containerStatuses[0].lastState.terminated.reason}'
+      register: oom_reason
+      changed_when: false
+
+    - name: Display termination reason
+      debug:
+        msg: "Last termination reason: {{ oom_reason.stdout }}"
+
+    - name: Patch memory limit in deployment manifest
+      replace:
+        path: "{{ manifest_path }}"
+        regexp: '(memory: )256Mi(\s+# intentionally low.*)'
+        replace: '\g<1>{{ new_limit }}\2'
+
+    - name: Commit updated manifest
+      shell: |
+        git add {{ manifest_path }}
+        git commit -m "fix(oom): raise memory limit to {{ new_limit }}"
+      args:
+        chdir: "{{ playbook_dir }}/../../"
+
+    - name: Push to Gitea
+      shell: |
+        bash scripts/push-to-gitea.sh
+      args:
+        chdir: "{{ playbook_dir }}/../../"
+
+    - name: Trigger ArgoCD sync
+      command: >
+        argocd app sync {{ argocd_app }} --grpc-web --insecure
+      ignore_errors: true
+
+    - name: Wait for ArgoCD sync to complete
+      command: >
+        argocd app wait {{ argocd_app }} --sync --health --timeout 120 --grpc-web --insecure
+      ignore_errors: true
+
+    - name: Verify health endpoint
+      uri:
+        url: "{{ app_url }}/health"
+        method: GET
+        status_code: 200
+      retries: 10
+      delay: 10
+      register: health_result
+
+    - name: Report fix result
+      debug:
+        msg: "dummy-webapp is healthy after OOM fix: {{ health_result.json }}"

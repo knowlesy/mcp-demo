@@ -1,0 +1,24 @@
+- defaultTab: nodes
+  description: |-
+    CHAOS JOB — Scenario 2
+    Deletes the dummy-webapp Deployment to simulate an accidental ops action.
+    ArgoCD self-heal or the fix-rundeck-chaos Ansible playbook should restore it.
+  executionEnabled: true
+  id: chaos-delete-deployment
+  loglevel: INFO
+  name: chaos-delete-deployment
+  nodeFilterEditable: false
+  plugins:
+    ExecutionLifecycle: {}
+  scheduleEnabled: false
+  sequence:
+    commands:
+      - description: Delete dummy-webapp Deployment
+        exec: kubectl delete deployment dummy-webapp -n apps --ignore-not-found
+      - description: Confirm deletion
+        exec: kubectl get deployment dummy-webapp -n apps || echo "Deployment deleted successfully"
+      - description: Check pod state
+        exec: kubectl get pods -n apps
+    keepgoing: false
+    strategy: node-first
+  uuid: chaos-delete-deployment-001

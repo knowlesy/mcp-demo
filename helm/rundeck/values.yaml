@@ -1,0 +1,48 @@
+# Rundeck — low-resource local configuration
+# Helm chart: rundeck/rundeck
+
+image:
+  tag: SNAPSHOT-latest
+
+rundeck:
+  adminUser: "admin:password,user,admin,architect,deploy,build"
+  env:
+    RUNDECK_GRAILS_URL: "http://rundeck.local:4440"
+    RUNDECK_SERVER_FORWARDED: "true"
+    RUNDECK_LOGGING_STRATEGY: "CONSOLE"
+
+  # Disable persistent storage for local testing
+  storageConvertPayload: false
+
+persistence:
+  enabled: false
+  storageClass: ""
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+service:
+  type: NodePort
+  port: 4440
+  nodePort: 34440
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: rundeck.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+# Disable database (use embedded H2 for local)
+postgresql:
+  enabled: false
+
+mysql:
+  enabled: false

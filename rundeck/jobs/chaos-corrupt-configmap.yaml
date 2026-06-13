@@ -1,0 +1,29 @@
+- defaultTab: nodes
+  description: |-
+    CHAOS JOB — Scenario 2 (variant)
+    Corrupts the dummy-webapp ConfigMap by injecting a bad DB_PATH value,
+    causing the app to fail to open the database on next restart.
+  executionEnabled: true
+  id: chaos-corrupt-configmap
+  loglevel: INFO
+  name: chaos-corrupt-configmap
+  nodeFilterEditable: false
+  plugins:
+    ExecutionLifecycle: {}
+  scheduleEnabled: false
+  sequence:
+    commands:
+      - description: Backup current ConfigMap
+        exec: kubectl get configmap dummy-webapp-config -n apps -o yaml > /tmp/configmap-backup.yaml
+      - description: Patch ConfigMap with invalid DB_PATH
+        exec: >-
+          kubectl patch configmap dummy-webapp-config -n apps
+          --type=json
+          -p='[{"op":"replace","path":"/data/DB_PATH","value":"/nonexistent/path/app.db"}]'
+      - description: Restart pod to pick up bad config
+        exec: kubectl rollout restart deployment/dummy-webapp -n apps
+      - description: Show current ConfigMap
+        exec: kubectl get configmap dummy-webapp-config -n apps -o yaml
+    keepgoing: false
+    strategy: node-first
+  uuid: chaos-corrupt-configmap-001

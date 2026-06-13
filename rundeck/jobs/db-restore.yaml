@@ -1,0 +1,46 @@
+- defaultTab: nodes
+  description: |-
+    FIX JOB — Scenario 5
+    Restores the SQLite users and events tables inside the dummy-webapp pod.
+    Safe to run multiple times (idempotent via CREATE TABLE IF NOT EXISTS).
+  executionEnabled: true
+  id: db-restore
+  loglevel: INFO
+  name: db-restore
+  nodeFilterEditable: false
+  plugins:
+    ExecutionLifecycle: {}
+  scheduleEnabled: false
+  sequence:
+    commands:
+      - description: Get pod name
+        exec: >-
+          kubectl get pod -n apps -l app=dummy-webapp
+          -o jsonpath='{.items[0].metadata.name}'
+        plugins:
+          LogFilter:
+            - config:
+                invalidKeyPattern: \s|\$|\{|\}|\\
+                logData: "true"
+                name: POD_NAME
+                regex: (.+)
+              type: key-value-data
+      - description: Restore schema and seed data
+        exec: >-
+          kubectl exec -n apps ${POD_NAME}
+          -- python3 -c "
+          import sqlite3, os;
+          db = os.environ.get('DB_PATH', '/data/app.db');
+          conn = sqlite3.connect(db);
+          conn.executescript('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP); CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES users(id));');
+          conn.commit();
+          print('Schema restored');
+          conn.close()
+          "
+      - description: Verify health endpoint
+        exec: >-
+          kubectl exec -n apps ${POD_NAME}
+          -- wget -qO- http://localhost:8080/health
+    keepgoing: false
+    strategy: node-first
+  uuid: db-restore-001

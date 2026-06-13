@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; d=json.load(sys.stdin); exit(0 if 'git commit' in d.get('command','') else 1)\" && repomix --config repomix.config.json --quiet 2>/dev/null && git add repomix-output.xml || true"
+          }
+        ]
+      }
+    ]
+  }
+}

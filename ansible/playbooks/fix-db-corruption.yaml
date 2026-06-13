@@ -1,0 +1,89 @@
+---
+# Fix Scenario 5: Restore the SQLite database after table corruption.
+# Strategy: exec into the pod and re-run the init_db() SQL, then seed data.
+- name: Fix DB Corruption — restore SQLite tables
+  hosts: local
+  gather_facts: false
+  vars:
+    db_path: /data/app.db
+
+  tasks:
+    - name: Confirm /health is returning 500
+      uri:
+        url: "{{ app_url }}/health"
+        method: GET
+        status_code: 500
+      register: health_pre
+      ignore_errors: true
+
+    - name: Show pre-fix health status
+      debug:
+        msg: "Pre-fix health status: {{ health_pre.status | default('connection error') }}"
+
+    - name: Get dummy-webapp pod name
+      command: >
+        kubectl get pod -n {{ app_namespace }} -l app=dummy-webapp
+        -o jsonpath='{.items[0].metadata.name}'
+      register: pod_name
+      changed_when: false
+
+    - name: Restore SQLite schema and seed data via exec
+      command: >
+        kubectl exec -n {{ app_namespace }} {{ pod_name.stdout }}
+        -- python3 -c "
+import sqlite3, os
+db = os.environ.get('DB_PATH', '{{ db_path }}')
+conn = sqlite3.connect(db)
+conn.executescript('''
+  CREATE TABLE IF NOT EXISTS users (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      name       TEXT    NOT NULL,
+      email      TEXT    UNIQUE NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS events (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id    INTEGER,
+      action     TEXT,
+      timestamp  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+''')
+try:
+    conn.execute(\"INSERT INTO users (name, email) VALUES ('Admin', 'admin@example.com')\")
+    conn.execute(\"INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com')\")
+    conn.commit()
+except Exception as e:
+    print(f'Seed note: {e}')
+rows = conn.execute('SELECT COUNT(*) FROM users').fetchone()
+conn.close()
+print(f'Restore complete. users row count: {rows[0]}')
+"
+      register: restore_result
+
+    - name: Show restore output
+      debug:
+        msg: "{{ restore_result.stdout }}"
+
+    - name: Verify health is 200
+      uri:
+        url: "{{ app_url }}/health"
+        method: GET
+        status_code: 200
+      retries: 6
+      delay: 5
+      register: health_post
+
+    - name: Verify /users returns data
+      uri:
+        url: "{{ app_url }}/users"
+        method: GET
+        status_code: 200
+      register: users_result
+
+    - name: Report success
+      debug:
+        msg: >
+          DB restored successfully.
+          Health: {{ health_post.json }}.
+          Users in DB: {{ users_result.json | length }}

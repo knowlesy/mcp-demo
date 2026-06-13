@@ -1,0 +1,31 @@
+{
+  "output": {
+    "filePath": "repomix-output.xml",
+    "style": "xml",
+    "headerText": "MCP Demo — full codebase snapshot for AI context. Auto-regenerated on every git commit.",
+    "instructionFilePath": "",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "showLineNumbers": false,
+    "copyToClipboard": false,
+    "topFilesLength": 10
+  },
+  "include": [
+    "**/*"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "repomix-output.xml",
+      "logs/**",
+      ".git/**",
+      "**/.gitkeep",
+      "charts/**",
+      "*.tgz"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

@@ -1,0 +1,43 @@
+---
+# Fix Scenario 3: Remove the restrictive nginx whitelist annotation.
+- name: Fix Nginx Whitelist — remove IP restriction
+  hosts: local
+  gather_facts: false
+
+  tasks:
+    - name: Read current Ingress annotations
+      command: >
+        kubectl get ingress dummy-webapp -n {{ app_namespace }}
+        -o jsonpath='{.metadata.annotations}'
+      register: ingress_annotations
+      changed_when: false
+
+    - name: Display current annotations
+      debug:
+        msg: "Current annotations: {{ ingress_annotations.stdout }}"
+
+    - name: Remove whitelist-source-range annotation
+      command: >
+        kubectl annotate ingress dummy-webapp -n {{ app_namespace }}
+        nginx.ingress.kubernetes.io/whitelist-source-range-
+      register: annotate_result
+      failed_when:
+        - annotate_result.rc != 0
+        - '"not found" not in annotate_result.stderr'
+
+    - name: Wait for nginx controller to reload (5s)
+      pause:
+        seconds: 5
+
+    - name: Verify access is restored
+      uri:
+        url: "{{ app_url }}/"
+        method: GET
+        status_code: 200
+      retries: 5
+      delay: 3
+      register: access_check
+
+    - name: Report
+      debug:
+        msg: "Nginx whitelist removed. App is accessible again: {{ access_check.status }}"

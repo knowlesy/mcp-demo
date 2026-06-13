@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dummy-webapp-config
+  namespace: apps
+data:
+  DB_PATH: /data/app.db
+  LOG_LEVEL: INFO
+  # nginx whitelist — chaos scenario 3 modifies this annotation on the Ingress,
+  # but the key is kept here as documentation of the expected value
+  ALLOWED_CIDR: "0.0.0.0/0"

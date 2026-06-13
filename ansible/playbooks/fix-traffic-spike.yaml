@@ -1,0 +1,61 @@
+---
+# Fix Scenario 4: Scale dummy-webapp to 3 replicas to absorb traffic spike.
+# Updates deployment.yaml, commits to Gitea, and lets ArgoCD sync.
+- name: Fix Traffic Spike — scale webapp replicas
+  hosts: local
+  gather_facts: false
+  vars:
+    manifest_path: "{{ playbook_dir }}/../../apps/dummy-webapp/k8s/deployment.yaml"
+    target_replicas: 3
+    argocd_app: "dummy-webapp"
+
+  tasks:
+    - name: Read current Prometheus latency (p95)
+      command: >
+        kubectl exec -n {{ monitoring_namespace }}
+        $(kubectl get pod -n {{ monitoring_namespace }} -l app.kubernetes.io/name=prometheus -o jsonpath='{.items[0].metadata.name}')
+        -- wget -qO-
+        'http://localhost:9090/api/v1/query?query=histogram_quantile(0.95,rate(webapp_request_latency_seconds_bucket[2m]))'
+      register: prom_query
+      failed_when: false
+      changed_when: false
+
+    - name: Show latency metric
+      debug:
+        msg: "{{ prom_query.stdout | default('Prometheus query unavailable') }}"
+
+    - name: Patch replicas in deployment manifest
+      replace:
+        path: "{{ manifest_path }}"
+        regexp: '(^\s*replicas:\s*)\d+'
+        replace: '\g<1>{{ target_replicas }}'
+
+    - name: Commit scale-out change
+      shell: |
+        git add {{ manifest_path }}
+        git commit -m "fix(traffic): scale dummy-webapp to {{ target_replicas }} replicas"
+      args:
+        chdir: "{{ playbook_dir }}/../../"
+
+    - name: Push to Gitea
+      shell: bash scripts/push-to-gitea.sh
+      args:
+        chdir: "{{ playbook_dir }}/../../"
+
+    - name: Trigger ArgoCD sync
+      command: argocd app sync {{ argocd_app }} --grpc-web --insecure
+      ignore_errors: true
+
+    - name: Wait for all replicas to be Ready
+      command: >
+        kubectl rollout status deployment/dummy-webapp
+        -n {{ app_namespace }} --timeout=120s
+
+    - name: Confirm replica count
+      command: kubectl get deployment dummy-webapp -n {{ app_namespace }}
+      register: dep_status
+      changed_when: false
+
+    - name: Report
+      debug:
+        msg: "Scaled to {{ target_replicas }} replicas. {{ dep_status.stdout }}"

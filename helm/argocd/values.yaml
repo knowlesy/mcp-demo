@@ -1,0 +1,80 @@
+# ArgoCD — low-resource local configuration
+# Helm chart: argo/argo-cd
+
+global:
+  image:
+    tag: ""  # use chart default
+
+configs:
+  secret:
+    argocdServerAdminPassword: "$2a$10$rRyBsGSHK6.uf6/7CFLMoe7P/OFKQiKIrIr0zKxLUTNYP5Oq3rIuO"
+    # bcrypt of "password" — regenerate with: argocd account bcrypt --password password
+
+  params:
+    server.insecure: true  # disable TLS for local ingress
+
+server:
+  replicas: 1
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: argocd.local
+    tls: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+repoServer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 30m
+      memory: 64Mi
+    limits:
+      cpu: 150m
+      memory: 192Mi
+
+applicationSet:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+notifications:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+controller:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+dex:
+  enabled: false
+
+redis:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
